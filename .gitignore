@@ -2,4 +2,4 @@
 <>former.html
 <>update.html
 so_question.json
-.gitignore
+*.gitignore
