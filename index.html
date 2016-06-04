@@ -15,6 +15,7 @@
 		}
 		.admin0_poly{
 			fill:  #ddd;
+			pointer-events: none;
 		}
 		.admin1_boundary{
 			fill: none;
@@ -31,11 +32,17 @@
 			pointer-events: none;
 		}
 		.admin2_poly {
-		  fill: #ccc;
+		  fill: #d0d0d0;
+		  fill-opacity: .5;
 		}
 
 		.admin2_poly :hover {
 			fill: orange;
+			fill-opacity: .3;
+			-moz-transition: all 0.3s;
+			-o-transition: all 0.3s;
+			-webkit-transition: all 0.3s;
+			transition: all 0.3s;
 		}
 		.admin1_text {
 			fill: #777;
@@ -43,15 +50,35 @@
 			font-size: 20px;
 			font-weight: 300;
 			text-anchor: middle;
+			pointer-events: none;
 		}
 		.city_point {
 			fill: red;
+			pointer-events: none;
 		}			
 		.cities_text {
 			font-family: Helvetica;
 			font-weight: 300;
 			font-size: 14px;
+			pointer-events: none;
 		}
+		#tooltip {
+
+  border: .25px solid;
+  position: absolute;
+			z-index: 2;
+			background: white;
+			/*width: 130px;*/
+			height:20px;
+			/*color: white;*/
+			font-size: 14px;
+			padding: 5px;
+			top: -150px;
+			left: -150px;
+			font-family: "HelveticaNeue-Light", "Helvetica Neur Light", "Helvetica Neur", Helvetica, Arial, "Lucida Grande", sans-serif;
+		  /*display: none;			*/
+			}
+
 		text {
 		  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 		  pointer-events: none;
@@ -61,6 +88,7 @@
 <body>
 
 <div id="map"></div>
+<div id="tooltip"></div>
 
 <script>
 (function(){
@@ -72,6 +100,19 @@
 		.append("svg")
 		.attr("width", width)
 		.attr("height", height)
+
+	var geoID = function(d) {
+		return "c" + d.properties.ID_2;
+	};
+
+	var hover = function(d) {
+		// console.log('d', d, 'event', event);
+		var div = document.getElementById('tooltip');
+		div.style.left = event.pageX + 'px';
+		div.style.top = event.pageY + 'px';
+		div.innerHTML = d.properties.NAME_2;
+	}
+
 
 	d3.json('mdg-output.json', function(error, data){
 		if (error) return console.error(error);
@@ -87,51 +128,45 @@
 		var t = [(width - s * (b[1][0] + b[0][0])) /2, (height - s * (b[1][1] + b[0][1])) /2 ]; 
 		projection.scale(s).translate(t);
 
-		//objects
+		var click = function(d) {
+			// admin2_poly.attr('fill-opacity', 0.6);
+			svg.selectAll("path")
+		      .data(topojson.feature(data, data.objects.mdg_adm2).features)
+		      .attr("fill-opacity", .5)
+			d3.select('#' + geoID(d))
+				.attr("fill-opacity", 1)
+		};
+		
+		
 		svg.append("g")
-				.attr("class", "admin0_poly")
+		.attr("class", "admin2_poly")
 			.selectAll("path")
-				.data(topojson.feature(data, data.objects.mdg_adm0).features)
-			.enter().append("path")
-				.attr("d", path)
-			.append("title")
-				.text(function(d) { return d.properties.name });
+	      .data(topojson.feature(data, data.objects.mdg_adm2).features)
+    	.enter().append("path")
+	      .attr("d", path)
+	      .attr("id", geoID)
+	      .on("mouseover", hover)
+	      .on("click", click)
 
 		svg.append("g")
-      .attr("class", "admin2_poly")
-    .selectAll("path")
-      .data(topojson.feature(data, data.objects.mdg_adm2).features)
-    .enter().append("path")
-      .attr("d", path)
-    .append("title")
-      .text(function(d) { 
-      	console.log(d)
-      	return d.properties.name; 
-      });
-
-		svg.append("g")
-			.attr("class", "admin1_boundary")
+				.attr("class", "admin1_boundary")
 			.append("path")
-			.datum(topojson.mesh(data, data.objects.mdg_adm1, function(a,b) { 
-				return a !== b; }))
+				.datum(topojson.mesh(data, data.objects.mdg_adm1, function(a,b) { return a !== b; }))
 			.attr("d", path);
 
 		svg.append("g")
-		.attr("class", "admin2_boundary")
+				.attr("class", "admin2_boundary")
 			.append("path")
-			.datum(topojson.mesh(data, data.objects.mdg_adm2, function(a,b) { 
-				console.log(a)
-				console.log(b)
-				return a !== b; }))
+				.datum(topojson.mesh(data, data.objects.mdg_adm2, function(a,b) { return a !== b; }))
 			.attr("d", path);
 
 		svg.append("g")
-			.attr("class", "admin1_text")
+				.attr("class", "admin1_text")
 			.selectAll("text")	
 				.data(topojson.feature(data, data.objects.mdg_adm1).features)
 			.enter().append("text")
-			.attr("dy", ".35em")	
-			.attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
+				.attr("dy", ".35em")	
+				.attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
 			.text(function(d) {
 				return d.properties.NAME_1
 			});
@@ -149,20 +184,18 @@
 			})
 
 		svg.append("g")
-			.attr("class", "city_text")
+				.attr("class", "city_text")
 			.selectAll("text")	
 				.data(topojson.feature(data, data.objects.mdg_places).features)
 			.enter().append("text")
-			.attr("dy", ".35em")	
-			.attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
+				.attr("dx", ".4em")	
+				.attr("dy", ".35em")	
+				.attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
 			.text(function(d) {
 				return d.properties.name
 			});
-
 	});
-
 })();
-
 </script>	
 	
 </body>
