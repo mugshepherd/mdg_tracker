@@ -1,5 +1,2 @@
-<>current.html
-<>former.html
-<>update.html
-so_question.json
 *.gitignore
+/debug/

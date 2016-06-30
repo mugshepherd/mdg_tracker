@@ -4,9 +4,10 @@
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<title></title>
-	<link rel="stylesheet" href="">
-	<script src="http://d3js.org/d3.v3.min.js"></script>
-	<script src="http://d3js.org/topojson.v1.min.js"></script>
+<!-- 	<script src="http://d3js.org/d3.v3.min.js"></script>
+	<script src="http://d3js.org/topojson.v1.min.js"></script> -->
+	<script src="lib/d3.min.js"></script>
+	<script src="lib/topojson.v1.min.js"></script>
 	<style>
 		svg {
 			border-style: solid;
@@ -35,7 +36,6 @@
 		  fill: #d0d0d0;
 		  fill-opacity: .5;
 		}
-
 		.admin2_poly :hover {
 			fill: orange;
 			fill-opacity: .3;
@@ -63,22 +63,17 @@
 			pointer-events: none;
 		}
 		#tooltip {
-
-  border: .25px solid;
-  position: absolute;
+		  border: .25px solid;
+		  position: absolute;
 			z-index: 2;
 			background: white;
-			/*width: 130px;*/
 			height:20px;
-			/*color: white;*/
 			font-size: 14px;
 			padding: 5px;
 			top: -150px;
 			left: -150px;
 			font-family: "HelveticaNeue-Light", "Helvetica Neur Light", "Helvetica Neur", Helvetica, Arial, "Lucida Grande", sans-serif;
-		  /*display: none;			*/
 			}
-
 		text {
 		  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 		  pointer-events: none;
@@ -91,7 +86,6 @@
 <div id="tooltip"></div>
 
 <script>
-(function(){
 	var height = 900;
 	var width = 600;
 	var projection = d3.geo.mercator();
@@ -101,6 +95,7 @@
 		.attr("width", width)
 		.attr("height", height)
 
+	//geoID is used for the click event
 	var geoID = function(d) {
 		return "c" + d.properties.ID_2;
 	};
@@ -108,17 +103,26 @@
 	var hover = function(d) {
 		// console.log('d', d, 'event', event);
 		var div = document.getElementById('tooltip');
-		div.style.left = event.pageX + 'px';
+		div.style.left = event.pageX + 20 + 'px';
 		div.style.top = event.pageY + 'px';
 		div.innerHTML = d.properties.NAME_2;
 	}
 
-
+	//d3 call to json source data
 	d3.json('mdg-output.json', function(error, data){
 		if (error) return console.error(error);
-
+		
 		//setting radius of city points
 		var radius = d3.scale.linear().domain([0,1000]).range([0,110]);
+		
+		//click event for regions
+		var click = function(d) {
+			svg.selectAll("path")
+		      .data(topojson.feature(data, data.objects.mdg_adm2).features)
+		      .attr("fill-opacity", .5)
+			d3.select('#' + geoID(d))
+				.attr("fill-opacity", 1)
+		};
 
 		//set up scale and translate
 		var b, s, t;
@@ -128,16 +132,7 @@
 		var t = [(width - s * (b[1][0] + b[0][0])) /2, (height - s * (b[1][1] + b[0][1])) /2 ]; 
 		projection.scale(s).translate(t);
 
-		var click = function(d) {
-			// admin2_poly.attr('fill-opacity', 0.6);
-			svg.selectAll("path")
-		      .data(topojson.feature(data, data.objects.mdg_adm2).features)
-		      .attr("fill-opacity", .5)
-			d3.select('#' + geoID(d))
-				.attr("fill-opacity", 1)
-		};
-		
-		
+		//polygons, points and text
 		svg.append("g")
 		.attr("class", "admin2_poly")
 			.selectAll("path")
@@ -194,8 +189,10 @@
 			.text(function(d) {
 				return d.properties.name
 			});
-	});
-})();
+		});
+
+	d3.select(self.frameElement).style("height", height + "px");
+// })();
 </script>	
 	
 </body>
